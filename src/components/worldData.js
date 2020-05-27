@@ -9,7 +9,6 @@ export const WorldData = () => {
         .then(res => res.json())
         .then(j => {            
             setWorldData(j);
-            console.log(j)
         });                             
     }, []);
     
