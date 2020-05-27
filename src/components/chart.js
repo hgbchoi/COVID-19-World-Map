@@ -7,9 +7,38 @@ const Chart = (props) => {
   const [formattedDeathsData, setFormattedDeathsData] = useState([]);
   const [formattedRecoveredData, setFormattedRecoveredData] = useState([]);  
 
-  const getFormattedDataArray = (data, dtype) => {    
+  const getFormattedDataArray = (data, dtype) => {        
     return Object.keys(data[dtype]).map(i => ({"date": i, "count":data[dtype][i]}));
   }
+
+  const formatDateString = (dateStr) => {    
+    const date = new Date(dateStr);
+
+    const ye = new Intl.DateTimeFormat('en', { year: '2-digit' }).format(date);
+    const mo = new Intl.DateTimeFormat('en', { month: 'numeric' }).format(date);
+    const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
+
+    return `${mo}/${da}/${ye}`;
+  }
+  const getFormattedDataArrayCAN = (data) => {
+    window.data = data;
+    return data.map(i => ({"date": formatDateString(i.Date), "count":i.Cases}));
+  }
+
+  const getDateRange= (days) => {
+    const currDateEpoch = new Date();
+    currDateEpoch.setDate(currDateEpoch.getDate() - 1);    
+
+    var currDate = new Date(currDateEpoch).toISOString();    
+
+    var pastDateEpoch = new Date();
+    pastDateEpoch.setDate(pastDateEpoch.getDate() - days);    
+
+    var pastDate = new Date(pastDateEpoch).toISOString();
+    
+    return {currDate, pastDate}
+  }
+
 
   useEffect(() => {
     if(props.selectedCountry){    
@@ -18,10 +47,27 @@ const Chart = (props) => {
       .then(json => {
         setFormattedCasesData(getFormattedDataArray(json.timeline, "cases")); 
         setFormattedDeathsData(getFormattedDataArray(json.timeline, "deaths")); 
+        if(props.selectedCountry.iso2 != "CA"){
         setFormattedRecoveredData(getFormattedDataArray(json.timeline, "recovered")); 
+        }
+        
       })      
       .catch(error => alert(`Data for ${props.selectedCountry.countryName} is not available`));          
     }
+
+    if(props.selectedCountry.iso2 == "CA"){
+    
+    var dateRange = getDateRange(45);
+
+    fetch(`https://api.covid19api.com/total/country/canada/status/recovered?from=${dateRange.pastDate}&to=${dateRange.currDate}`)  
+    .then(res => res.json())
+    .then(json => {
+      console.log(getFormattedDataArrayCAN(json));
+      setFormattedRecoveredData(getFormattedDataArrayCAN(json));
+    })
+    .catch(error => alert(`Data for ${props.selectedCountry.countryName} is not available`));          
+    }
+
   }, [props.selectedCountry]);  
 
   return (
